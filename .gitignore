@@ -1,0 +1,20 @@
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Flutter/Dart
+.dart_tool/
+.pub/
+.pub-cache/
+build/
+*.lock
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
