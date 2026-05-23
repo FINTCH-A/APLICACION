@@ -1,10 +1,13 @@
+// ignore_for_file: unused_import
+
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/text_styles.dart';
+import '../../../config/theme/app_borders.dart';
 
 class CustomButton extends StatelessWidget {
   final String text;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed; // ← Cambiado a nullable
   final bool isLoading;
   final bool isOutlined;
   final IconData? icon;
@@ -13,11 +16,12 @@ class CustomButton extends StatelessWidget {
   final double? width;
   final double height;
   final double borderRadius;
+  final bool fullWidth;
 
   const CustomButton({
     super.key,
     required this.text,
-    required this.onPressed,
+    this.onPressed,
     this.isLoading = false,
     this.isOutlined = false,
     this.icon,
@@ -26,20 +30,23 @@ class CustomButton extends StatelessWidget {
     this.width,
     this.height = 48,
     this.borderRadius = 12,
+    this.fullWidth = true,
   });
 
   @override
   Widget build(BuildContext context) {
+    final buttonWidth = fullWidth ? (width ?? double.infinity) : width;
+
     final button = isOutlined
         ? OutlinedButton(
             onPressed: isLoading ? null : onPressed,
             style: OutlinedButton.styleFrom(
               foregroundColor: textColor ?? AppColors.primary,
-              minimumSize: Size(width ?? double.infinity, height),
+              minimumSize: Size(buttonWidth ?? double.infinity, height),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(borderRadius),
               ),
-              side: BorderSide(color: AppColors.primary),
+              side: BorderSide(color: AppColors.primary, width: 1.5),
             ),
             child: _buildChild(),
           )
@@ -48,11 +55,12 @@ class CustomButton extends StatelessWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: backgroundColor ?? AppColors.primary,
               foregroundColor: textColor ?? Colors.white,
-              minimumSize: Size(width ?? double.infinity, height),
+              minimumSize: Size(buttonWidth ?? double.infinity, height),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(borderRadius),
               ),
               elevation: 0,
+              shadowColor: Colors.transparent,
             ),
             child: _buildChild(),
           );

@@ -3,12 +3,13 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/text_styles.dart';
+import '../../../config/theme/app_borders.dart';
+import '../../../config/theme/app_shadows.dart';
 import '../../../config/routes/route_names.dart';
 import '../../../data/models/user_model.dart';
 import '../../../data/providers/auth_provider.dart';
 import '../../widgets/common/custom_button.dart';
 import '../../widgets/common/custom_text_field.dart';
-import '../../widgets/common/loading_widget.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -80,249 +81,290 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Consumer<AuthProvider>(
-          builder: (context, authProvider, child) {
-            if (authProvider.isLoading) {
-              return const LoadingWidget(message: 'Creando cuenta...');
-            }
+      body: Container(
+        decoration: BoxDecoration(gradient: AppColors.backgroundGradient),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 20),
 
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: 20),
-                  // Header
-                  Icon(
-                    Icons.person_add_outlined,
-                    size: 60,
-                    color: AppColors.primary,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Crear Cuenta',
-                    style: TextStyles.headlineMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Completa tus datos para registrarte',
-                    style: TextStyles.bodyMedium.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 32),
-                  // Formulario
-                  Form(
-                    key: _formKey,
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: CustomTextField(
-                                label: 'Nombre',
-                                hint: 'Juan',
-                                controller: _firstNameController,
-                                prefixIcon: Icons.person_outline,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Nombre requerido';
-                                  }
-                                  return null;
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: CustomTextField(
-                                label: 'Apellido',
-                                hint: 'Pérez',
-                                controller: _lastNameController,
-                                prefixIcon: Icons.person_outline,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Apellido requerido';
-                                  }
-                                  return null;
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        CustomTextField(
-                          label: 'DNI',
-                          hint: '12345678',
-                          controller: _dniController,
-                          keyboardType: TextInputType.number,
-                          prefixIcon: Icons.badge_outlined,
-                          maxLength: 8,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'DNI requerido';
-                            }
-                            if (value.length != 8) {
-                              return 'DNI debe tener 8 dígitos';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        CustomTextField(
-                          label: 'Correo electrónico',
-                          hint: 'usuario@ejemplo.com',
-                          controller: _emailController,
-                          keyboardType: TextInputType.emailAddress,
-                          prefixIcon: Icons.email_outlined,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Correo requerido';
-                            }
-                            if (!value.contains('@')) {
-                              return 'Correo inválido';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        CustomTextField(
-                          label: 'Teléfono',
-                          hint: '987654321',
-                          controller: _phoneController,
-                          keyboardType: TextInputType.phone,
-                          prefixIcon: Icons.phone_outlined,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Teléfono requerido';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        CustomTextField(
-                          label: 'Fecha de Nacimiento',
-                          hint: 'AAAA-MM-DD',
-                          controller: _birthDateController,
-                          prefixIcon: Icons.cake_outlined,
-                          suffixIcon: IconButton(
-                            icon: const Icon(Icons.calendar_today),
-                            onPressed: _selectDate,
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Fecha requerida';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        CustomTextField(
-                          label: 'Contraseña',
-                          hint: '••••••••',
-                          controller: _passwordController,
-                          obscureText: _obscurePassword,
-                          prefixIcon: Icons.lock_outline,
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePassword
-                                  ? Icons.visibility_off_outlined
-                                  : Icons.visibility_outlined,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _obscurePassword = !_obscurePassword;
-                              });
-                            },
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Contraseña requerida';
-                            }
-                            if (value.length < 6) {
-                              return 'Mínimo 6 caracteres';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        CustomTextField(
-                          label: 'Confirmar Contraseña',
-                          hint: '••••••••',
-                          controller: _confirmPasswordController,
-                          obscureText: _obscureConfirmPassword,
-                          prefixIcon: Icons.lock_outline,
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscureConfirmPassword
-                                  ? Icons.visibility_off_outlined
-                                  : Icons.visibility_outlined,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _obscureConfirmPassword =
-                                    !_obscureConfirmPassword;
-                              });
-                            },
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Confirma tu contraseña';
-                            }
-                            if (value != _passwordController.text) {
-                              return 'Las contraseñas no coinciden';
-                            }
-                            return null;
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  CustomButton(text: 'Registrarse', onPressed: _handleRegister),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        '¿Ya tienes cuenta?',
-                        style: TextStyles.bodyMedium.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          context.go(RouteNames.login);
-                        },
-                        child: const Text('Iniciar Sesión'),
-                      ),
-                    ],
-                  ),
-                  if (authProvider.error != null) ...[
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.error.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        authProvider.error!,
-                        style: TextStyles.bodySmall.copyWith(
-                          color: AppColors.error,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            );
-          },
+                // Logo
+                _buildLogo(),
+
+                const SizedBox(height: 16),
+
+                // Título
+                _buildTitle(),
+
+                const SizedBox(height: 32),
+
+                // Formulario
+                _buildForm(),
+
+                const SizedBox(height: 24),
+
+                // Botón de registro
+                _buildRegisterButton(),
+
+                const SizedBox(height: 16),
+
+                // Enlace a login
+                _buildLoginLink(),
+
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildLogo() {
+    return Center(
+      child: Container(
+        width: 200,
+        height: 80,
+        decoration: BoxDecoration(
+          borderRadius: AppBorders.cardLarge,
+          boxShadow: AppShadows.glow,
+        ),
+        child: Image.asset(
+          'assets/images/logo-dark.png',
+          width: 80,
+          height: 80,
+          fit: BoxFit.contain,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTitle() {
+    return Column(
+      children: [
+        Text(
+          'Crear Cuenta',
+          style: TextStyles.headlineLarge.copyWith(fontWeight: FontWeight.w700),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Completa tus datos para registrarte',
+          style: TextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildForm() {
+    return Form(
+      key: _formKey,
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: CustomTextField(
+                  label: 'Nombre',
+                  hint: 'Juan',
+                  controller: _firstNameController,
+                  prefixIcon: Icons.person_outline,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Nombre requerido';
+                    }
+                    return null;
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: CustomTextField(
+                  label: 'Apellido',
+                  hint: 'Pérez',
+                  controller: _lastNameController,
+                  prefixIcon: Icons.person_outline,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Apellido requerido';
+                    }
+                    return null;
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          CustomTextField(
+            label: 'DNI',
+            hint: '12345678',
+            controller: _dniController,
+            keyboardType: TextInputType.number,
+            prefixIcon: Icons.badge_outlined,
+            maxLength: 8,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'DNI requerido';
+              }
+              if (value.length != 8) {
+                return 'DNI debe tener 8 dígitos';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 16),
+          CustomTextField(
+            label: 'Correo electrónico',
+            hint: 'usuario@ejemplo.com',
+            controller: _emailController,
+            keyboardType: TextInputType.emailAddress,
+            prefixIcon: Icons.email_outlined,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Correo requerido';
+              }
+              if (!value.contains('@')) {
+                return 'Correo inválido';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 16),
+          CustomTextField(
+            label: 'Teléfono',
+            hint: '987654321',
+            controller: _phoneController,
+            keyboardType: TextInputType.phone,
+            prefixIcon: Icons.phone_outlined,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Teléfono requerido';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 16),
+          CustomTextField(
+            label: 'Fecha de Nacimiento',
+            hint: 'AAAA-MM-DD',
+            controller: _birthDateController,
+            prefixIcon: Icons.cake_outlined,
+            suffixIcon: IconButton(
+              icon: const Icon(Icons.calendar_today),
+              onPressed: _selectDate,
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Fecha requerida';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 16),
+          CustomTextField(
+            label: 'Contraseña',
+            hint: '••••••••',
+            controller: _passwordController,
+            obscureText: _obscurePassword,
+            prefixIcon: Icons.lock_outline,
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscurePassword
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
+              ),
+              onPressed: () {
+                setState(() {
+                  _obscurePassword = !_obscurePassword;
+                });
+              },
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Contraseña requerida';
+              }
+              if (value.length < 6) {
+                return 'Mínimo 6 caracteres';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 16),
+          CustomTextField(
+            label: 'Confirmar Contraseña',
+            hint: '••••••••',
+            controller: _confirmPasswordController,
+            obscureText: _obscureConfirmPassword,
+            prefixIcon: Icons.lock_outline,
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscureConfirmPassword
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
+              ),
+              onPressed: () {
+                setState(() {
+                  _obscureConfirmPassword = !_obscureConfirmPassword;
+                });
+              },
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Confirma tu contraseña';
+              }
+              if (value != _passwordController.text) {
+                return 'Las contraseñas no coinciden';
+              }
+              return null;
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRegisterButton() {
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
+        return CustomButton(
+          text: 'Registrarse',
+          onPressed: authProvider.isLoading ? null : _handleRegister,
+          isLoading: authProvider.isLoading,
+        );
+      },
+    );
+  }
+
+  Widget _buildLoginLink() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          '¿Ya tienes cuenta? ',
+          style: TextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+        ),
+        TextButton(
+          onPressed: () {
+            context.go(RouteNames.login);
+          },
+          style: TextButton.styleFrom(
+            padding: EdgeInsets.zero,
+            minimumSize: const Size(0, 0),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          child: Text(
+            'Iniciar Sesión',
+            style: TextStyles.labelLarge.copyWith(
+              color: AppColors.primary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

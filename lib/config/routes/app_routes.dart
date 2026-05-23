@@ -86,12 +86,26 @@ class AppRoutes {
         path: RouteNames.pagos,
         builder: (context, state) => const PagosScreen(),
       ),
+      // Ruta para pagar desde cuota (con query parameters)
+      GoRoute(
+        name: 'nuevaPago',
+        path: RouteNames.nuevaPago,
+        builder: (context, state) {
+          final loanId = state.uri.queryParameters['loanId'];
+          final installmentId = state.uri.queryParameters['installmentId'];
+          return RegistrarPagoScreen(
+            prestamoId: loanId,
+            cuotaId: installmentId != null ? int.parse(installmentId) : null,
+          );
+        },
+      ),
+      // Ruta legacy para compatibilidad (sin parámetros)
       GoRoute(
         name: 'registrarPago',
         path: RouteNames.registrarPago,
         builder: (context, state) {
-          final id = state.pathParameters['id'] ?? '';
-          return RegistrarPagoScreen(prestamoId: id);
+          final id = state.pathParameters['id'];
+          return RegistrarPagoScreen(prestamoId: id, cuotaId: null);
         },
       ),
 

@@ -1,3 +1,4 @@
+import 'package:aplicacion_avante/data/models/prestamo_model.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
@@ -20,6 +21,16 @@ class PrestamosScreen extends StatefulWidget {
 class _PrestamosScreenState extends State<PrestamosScreen> {
   String _selectedFilter = 'todos';
 
+  final _filters = const [
+    _FilterOption(key: 'todos', label: 'Todos', icon: Icons.list_rounded),
+    _FilterOption(key: 'activos', label: 'Activos', icon: Icons.bolt_rounded),
+    _FilterOption(
+      key: 'pagados',
+      label: 'Pagados',
+      icon: Icons.check_circle_outline_rounded,
+    ),
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -27,32 +38,32 @@ class _PrestamosScreenState extends State<PrestamosScreen> {
   }
 
   Future<void> _loadPrestamos() async {
-    final provider = context.read<PrestamoProvider>();
-    await provider.loadLoans();
+    await context.read<PrestamoProvider>().loadLoans();
   }
 
   List<dynamic> _getFilteredLoans(PrestamoProvider provider) {
-    final loans = provider.loans;
-
     switch (_selectedFilter) {
       case 'activos':
-        return loans.where((l) => l.status.name == 'active').toList();
+        return provider.loans
+            .where((l) => l.status == LoanStatus.active)
+            .toList();
       case 'pagados':
-        return loans.where((l) => l.status.name == 'paid').toList();
+        return provider.loans
+            .where((l) => l.status == LoanStatus.paid)
+            .toList();
       default:
-        return loans;
+        return provider.loans;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(title: const Text('Mis Préstamos'), centerTitle: true),
       body: Consumer<PrestamoProvider>(
         builder: (context, provider, child) {
-          if (provider.isLoadingLoans) {
-            return const LoadingWidget();
-          }
+          if (provider.isLoadingLoans) return const LoadingWidget();
 
           if (provider.loansError != null) {
             return ErrorWidgetCustom(
@@ -63,38 +74,37 @@ class _PrestamosScreenState extends State<PrestamosScreen> {
 
           final filteredLoans = _getFilteredLoans(provider);
 
-          if (filteredLoans.isEmpty) {
-            return EmptyState(
-              title: 'No tienes préstamos',
-              message: 'Tus préstamos aparecerán aquí una vez sean aprobados',
-              icon: Icons.account_balance_wallet_outlined,
-            );
-          }
-
           return Column(
             children: [
-              // Filtros
-              _buildFilters(),
-              Expanded(
-                child: RefreshIndicator(
-                  onRefresh: _loadPrestamos,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: filteredLoans.length,
-                    itemBuilder: (context, index) {
-                      final loan = filteredLoans[index];
-                      return PrestamoCard(
-                        prestamo: loan,
-                        onTap: () {
-                          context.push(
+              _buildFilterBar(),
+              if (filteredLoans.isEmpty)
+                Expanded(
+                  child: EmptyState(
+                    title: 'Sin préstamos',
+                    message: 'No hay préstamos en esta categoría',
+                    icon: Icons.account_balance_wallet_outlined,
+                  ),
+                )
+              else
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: _loadPrestamos,
+                    color: AppColors.primary,
+                    child: ListView.builder(
+                      padding: const EdgeInsets.only(top: 8, bottom: 100),
+                      itemCount: filteredLoans.length,
+                      itemBuilder: (context, index) {
+                        final loan = filteredLoans[index];
+                        return PrestamoCard(
+                          prestamo: loan,
+                          onTap: () => context.push(
                             RouteNames.detallePrestamoPath(loan.id.toString()),
-                          );
-                        },
-                      );
-                    },
+                          ),
+                        );
+                      },
+                    ),
                   ),
                 ),
-              ),
             ],
           );
         },
@@ -102,56 +112,93 @@ class _PrestamosScreenState extends State<PrestamosScreen> {
     );
   }
 
-  Widget _buildFilters() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          _FilterChip(
-            label: 'Todos',
-            isSelected: _selectedFilter == 'todos',
-            onSelected: () => setState(() => _selectedFilter = 'todos'),
-          ),
-          const SizedBox(width: 8),
-          _FilterChip(
-            label: 'Activos',
-            isSelected: _selectedFilter == 'activos',
-            onSelected: () => setState(() => _selectedFilter = 'activos'),
-          ),
-          const SizedBox(width: 8),
-          _FilterChip(
-            label: 'Pagados',
-            isSelected: _selectedFilter == 'pagados',
-            onSelected: () => setState(() => _selectedFilter = 'pagados'),
-          ),
-        ],
+  Widget _buildFilterBar() {
+    return SizedBox(
+      height: 44,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: _filters.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final f = _filters[index];
+          final isSelected = _selectedFilter == f.key;
+          return _FilterTab(
+            label: f.label,
+            icon: f.icon,
+            isSelected: isSelected,
+            onTap: () => setState(() => _selectedFilter = f.key),
+          );
+        },
       ),
     );
   }
 }
 
-class _FilterChip extends StatelessWidget {
-  final String label;
-  final bool isSelected;
-  final VoidCallback onSelected;
+// ── Modelo interno de filtro ──────────────────────────────
 
-  const _FilterChip({
+class _FilterOption {
+  final String key;
+  final String label;
+  final IconData icon;
+  const _FilterOption({
+    required this.key,
     required this.label,
+    required this.icon,
+  });
+}
+
+// ── Tab de filtro personalizado ───────────────────────────
+
+class _FilterTab extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _FilterTab({
+    required this.label,
+    required this.icon,
     required this.isSelected,
-    required this.onSelected,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return FilterChip(
-      label: Text(label),
-      selected: isSelected,
-      onSelected: (_) => onSelected(),
-      backgroundColor: AppColors.surface,
-      selectedColor: AppColors.primary.withOpacity(0.2),
-      checkmarkColor: AppColors.primary,
-      labelStyle: TextStyles.labelMedium.copyWith(
-        color: isSelected ? AppColors.primary : AppColors.textSecondary,
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary : AppColors.surface,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : AppColors.border,
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 13,
+              color: isSelected ? Colors.white : AppColors.textSecondary,
+            ),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: TextStyles.labelMedium.copyWith(
+                color: isSelected ? Colors.white : AppColors.textSecondary,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

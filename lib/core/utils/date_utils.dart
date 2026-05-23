@@ -34,4 +34,9 @@ class DateUtilsCustom {
   static int daysBetween(DateTime from, DateTime to) {
     return to.difference(from).inDays;
   }
+
+  // Agrega este método a tu DateUtilsCustom
+  static String formatDateTimeCustom(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+  }
 }

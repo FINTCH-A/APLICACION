@@ -10,57 +10,62 @@ class EstadoBadgePrestamo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final config = _getStatusConfig();
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: _getBackgroundColor().withOpacity(0.15),
-        borderRadius: BorderRadius.circular(24),
+        color: config.color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: config.color.withOpacity(0.3), width: 1),
       ),
-      child: Text(
-        _getText(),
-        style: TextStyles.labelMedium.copyWith(
-          color: _getBackgroundColor(),
-          fontWeight: FontWeight.w600,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: config.color,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 5),
+          Text(
+            config.text,
+            style: TextStyles.labelSmall.copyWith(
+              color: config.color,
+              fontWeight: FontWeight.w600,
+              fontSize: 11,
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Color _getBackgroundColor() {
+  _StatusConfig _getStatusConfig() {
     switch (status) {
       case LoanStatus.active:
-        return AppColors.success;
-      case LoanStatus.pending:
-        return AppColors.warning;
+        return _StatusConfig(text: 'Activo', color: AppColors.success);
       case LoanStatus.paid:
-        return AppColors.info;
+        return _StatusConfig(text: 'Pagado', color: AppColors.info);
+      case LoanStatus.pending:
+        return _StatusConfig(text: 'Pendiente', color: AppColors.warning);
       case LoanStatus.approved:
-        return AppColors.primary;
+        return _StatusConfig(text: 'Aprobado', color: AppColors.primary);
       case LoanStatus.rejected:
-        return AppColors.error;
+        return _StatusConfig(text: 'Rechazado', color: AppColors.error);
       case LoanStatus.defaulted:
-        return AppColors.error;
+        return _StatusConfig(text: 'Incumplido', color: AppColors.error);
       case LoanStatus.cancelled:
-        return AppColors.textSecondary;
+        return _StatusConfig(text: 'Cancelado', color: AppColors.textSecondary);
     }
   }
+}
 
-  String _getText() {
-    switch (status) {
-      case LoanStatus.active:
-        return '● Activo';
-      case LoanStatus.pending:
-        return '● Pendiente';
-      case LoanStatus.paid:
-        return '● Pagado';
-      case LoanStatus.approved:
-        return '● Aprobado';
-      case LoanStatus.rejected:
-        return '● Rechazado';
-      case LoanStatus.defaulted:
-        return '● Incumplido';
-      case LoanStatus.cancelled:
-        return '● Cancelado';
-    }
-  }
+class _StatusConfig {
+  final String text;
+  final Color color;
+  _StatusConfig({required this.text, required this.color});
 }

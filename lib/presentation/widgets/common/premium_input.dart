@@ -1,8 +1,11 @@
+// ignore_for_file: unused_import
+
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
+import '../../../config/theme/app_borders.dart';
 import '../../../config/theme/text_styles.dart';
 
-class CustomTextField extends StatelessWidget {
+class PremiumInput extends StatelessWidget {
   final String label;
   final String? hint;
   final TextEditingController? controller;
@@ -11,13 +14,14 @@ class CustomTextField extends StatelessWidget {
   final TextInputType keyboardType;
   final IconData? prefixIcon;
   final Widget? suffixIcon;
-  final void Function(String)? onChanged;
+  final Function(String)? onChanged;
   final int maxLines;
   final int? maxLength;
   final bool enabled;
   final String? initialValue;
+  final String? errorText;
 
-  const CustomTextField({
+  const PremiumInput({
     super.key,
     required this.label,
     this.hint,
@@ -32,6 +36,7 @@ class CustomTextField extends StatelessWidget {
     this.maxLength,
     this.enabled = true,
     this.initialValue,
+    this.errorText,
   });
 
   @override
@@ -60,14 +65,14 @@ class CustomTextField extends StatelessWidget {
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: TextStyles.bodyMedium.copyWith(
-              color:
-                  AppColors.textTertiary, // Cambiado de textHint a textTertiary
+              color: AppColors.textTertiary,
             ),
             prefixIcon: prefixIcon != null
                 ? Icon(prefixIcon, color: AppColors.textSecondary)
                 : null,
             suffixIcon: suffixIcon,
             counterText: '',
+            errorText: errorText,
           ),
         ),
       ],

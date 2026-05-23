@@ -13,13 +13,12 @@ import 'data/providers/solicitud_provider.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Cargar variables de entorno
   await dotenv.load(fileName: ".env");
 
-  // Inicializar SharedPreferences
-  await SharedPrefs.init();
+  print('ENV: ${dotenv.env['APP_ENV']}');
+  print('API URL: ${dotenv.env['API_URL']}');
 
-  // Inicializar ApiClient
+  await SharedPrefs.init();
   await ApiClient().init();
 
   runApp(const MyApp());
@@ -32,6 +31,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        // Providers únicos (eliminados duplicados)
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => PrestamoProvider()),
         ChangeNotifierProvider(create: (_) => PagoProvider()),

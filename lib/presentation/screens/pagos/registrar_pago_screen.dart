@@ -15,8 +15,10 @@ import '../../widgets/common/custom_text_field.dart';
 import '../../widgets/common/loading_widget.dart';
 
 class RegistrarPagoScreen extends StatefulWidget {
-  final String prestamoId;
-  const RegistrarPagoScreen({super.key, required this.prestamoId});
+  final String? prestamoId; // ← CAMBIADO: opcional
+  final int? cuotaId; // ← NUEVO: opcional
+
+  const RegistrarPagoScreen({super.key, this.prestamoId, this.cuotaId});
 
   @override
   State<RegistrarPagoScreen> createState() => _RegistrarPagoScreenState();
@@ -30,6 +32,8 @@ class _RegistrarPagoScreenState extends State<RegistrarPagoScreen> {
 
   String? _selectedPaymentMethod = 'Yape';
   bool _isSubmitting = false;
+  bool _isLoading = false;
+  double? _suggestedAmount;
 
   final List<String> _paymentMethods = [
     'Yape',
@@ -39,11 +43,41 @@ class _RegistrarPagoScreenState extends State<RegistrarPagoScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _loadSuggestedAmount();
+  }
+
+  @override
   void dispose() {
     _amountController.dispose();
     _referenceController.dispose();
     _notesController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadSuggestedAmount() async {
+    if (widget.cuotaId != null && widget.prestamoId != null) {
+      setState(() => _isLoading = true);
+      try {
+        final provider = context.read<PrestamoProvider>();
+        await provider.loadInstallments(int.parse(widget.prestamoId!));
+        final cuota = provider.installments.firstWhere(
+          (c) => c.id == widget.cuotaId,
+          orElse: () => throw Exception('Cuota no encontrada'),
+        );
+        setState(() {
+          _suggestedAmount = cuota.pendingAmount > 0
+              ? cuota.pendingAmount
+              : cuota.totalAmount;
+          _amountController.text = _suggestedAmount!.toStringAsFixed(2);
+        });
+      } catch (e) {
+        debugPrint('Error cargando monto sugerido: $e');
+      } finally {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   Future<void> _submitPago() async {
@@ -54,7 +88,7 @@ class _RegistrarPagoScreenState extends State<RegistrarPagoScreen> {
     });
 
     final dto = CreatePaymentDto(
-      loanId: int.parse(widget.prestamoId),
+      loanId: int.parse(widget.prestamoId!),
       amount: double.parse(_amountController.text),
       reference: _referenceController.text,
       notes: _notesController.text.isNotEmpty ? _notesController.text : null,
@@ -89,8 +123,8 @@ class _RegistrarPagoScreenState extends State<RegistrarPagoScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Registrar Pago'), centerTitle: true),
-      body: _isSubmitting
-          ? const LoadingWidget(message: 'Procesando pago...')
+      body: _isSubmitting || _isLoading
+          ? const LoadingWidget(message: 'Procesando...')
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Form(
@@ -98,6 +132,56 @@ class _RegistrarPagoScreenState extends State<RegistrarPagoScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // Información de la cuota (si aplica)
+                    if (widget.prestamoId != null &&
+                        widget.cuotaId != null) ...[
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(
+                                Icons.receipt_long_rounded,
+                                color: AppColors.primary,
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Préstamo #${widget.prestamoId}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Cuota #${widget.cuotaId}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
                     // Método de pago
                     Container(
                       decoration: BoxDecoration(
