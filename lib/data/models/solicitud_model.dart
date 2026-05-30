@@ -22,6 +22,27 @@ class LoanApplicationModel extends Equatable {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  // Nuevos campos para la solicitud completa
+  final String? country;
+  final String? department;
+  final String? city;
+  final String? district;
+  final String? streetAddress;
+  final String? postalCode;
+  final String? employmentStatus;
+  final String? employerName;
+  final double? monthlyIncome;
+  final double? monthlyExpenses;
+  final int? numberOfDependents;
+  final double? otherIncomeSources;
+  final String? maritalStatus;
+  final String? housingType;
+  final int? numberOfChildren;
+  final String? paymentType;
+  final String? paymentProvider;
+  final String? accountNumber;
+  final String? accountHolder;
+
   const LoanApplicationModel({
     required this.id,
     required this.userId,
@@ -34,6 +55,25 @@ class LoanApplicationModel extends Equatable {
     this.reviewedBy,
     required this.createdAt,
     required this.updatedAt,
+    this.country,
+    this.department,
+    this.city,
+    this.district,
+    this.streetAddress,
+    this.postalCode,
+    this.employmentStatus,
+    this.employerName,
+    this.monthlyIncome,
+    this.monthlyExpenses,
+    this.numberOfDependents,
+    this.otherIncomeSources,
+    this.maritalStatus,
+    this.housingType,
+    this.numberOfChildren,
+    this.paymentType,
+    this.paymentProvider,
+    this.accountNumber,
+    this.accountHolder,
   });
 
   factory LoanApplicationModel.fromJson(Map<String, dynamic> json) {
@@ -51,6 +91,26 @@ class LoanApplicationModel extends Equatable {
       reviewedBy: json['reviewedBy'] as int?,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
+      // Nuevos campos
+      country: json['country'] as String?,
+      department: json['department'] as String?,
+      city: json['city'] as String?,
+      district: json['district'] as String?,
+      streetAddress: json['streetAddress'] as String?,
+      postalCode: json['postalCode'] as String?,
+      employmentStatus: json['employmentStatus'] as String?,
+      employerName: json['employerName'] as String?,
+      monthlyIncome: (json['monthlyIncome'] as num?)?.toDouble(),
+      monthlyExpenses: (json['monthlyExpenses'] as num?)?.toDouble(),
+      numberOfDependents: json['numberOfDependents'] as int?,
+      otherIncomeSources: (json['otherIncomeSources'] as num?)?.toDouble(),
+      maritalStatus: json['maritalStatus'] as String?,
+      housingType: json['housingType'] as String?,
+      numberOfChildren: json['numberOfChildren'] as int?,
+      paymentType: json['paymentType'] as String?,
+      paymentProvider: json['paymentProvider'] as String?,
+      accountNumber: json['accountNumber'] as String?,
+      accountHolder: json['accountHolder'] as String?,
     );
   }
 
@@ -67,6 +127,25 @@ class LoanApplicationModel extends Equatable {
       'reviewedBy': reviewedBy,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
+      'country': country,
+      'department': department,
+      'city': city,
+      'district': district,
+      'streetAddress': streetAddress,
+      'postalCode': postalCode,
+      'employmentStatus': employmentStatus,
+      'employerName': employerName,
+      'monthlyIncome': monthlyIncome,
+      'monthlyExpenses': monthlyExpenses,
+      'numberOfDependents': numberOfDependents,
+      'otherIncomeSources': otherIncomeSources,
+      'maritalStatus': maritalStatus,
+      'housingType': housingType,
+      'numberOfChildren': numberOfChildren,
+      'paymentType': paymentType,
+      'paymentProvider': paymentProvider,
+      'accountNumber': accountNumber,
+      'accountHolder': accountHolder,
     };
   }
 
@@ -119,26 +198,121 @@ class LoanApplicationModel extends Equatable {
     reviewedBy,
     createdAt,
     updatedAt,
+    country,
+    department,
+    city,
+    district,
+    streetAddress,
+    postalCode,
+    employmentStatus,
+    employerName,
+    monthlyIncome,
+    monthlyExpenses,
+    numberOfDependents,
+    otherIncomeSources,
+    maritalStatus,
+    housingType,
+    numberOfChildren,
+    paymentType,
+    paymentProvider,
+    accountNumber,
+    accountHolder,
   ];
 }
 
-// DTOs
+// ==================== DTO COMPLETO PARA CREAR SOLICITUD ====================
+
 class CreateLoanApplicationDto {
   final double requestedAmount;
   final int requestedTerm;
   final String? purpose;
 
+  // Datos de dirección (Step2)
+  final String? country;
+  final String? department;
+  final String? city;
+  final String? district;
+  final String? streetAddress;
+  final String? postalCode;
+
+  // Datos laborales (Step3)
+  final String? employmentStatus;
+  final String? employerName;
+  final double? monthlyIncome;
+  final double? monthlyExpenses;
+  final int? numberOfDependents;
+  final double? otherIncomeSources;
+
+  // Datos personales (Step4)
+  final String? maritalStatus;
+  final String? housingType;
+  final int? numberOfChildren;
+
+  // Datos de pago (Step5)
+  final String? paymentType;
+  final String? paymentProvider;
+  final String? accountNumber;
+  final String? accountHolder;
+
   const CreateLoanApplicationDto({
     required this.requestedAmount,
     required this.requestedTerm,
     this.purpose,
+    // Step2
+    this.country,
+    this.department,
+    this.city,
+    this.district,
+    this.streetAddress,
+    this.postalCode,
+    // Step3
+    this.employmentStatus,
+    this.employerName,
+    this.monthlyIncome,
+    this.monthlyExpenses,
+    this.numberOfDependents,
+    this.otherIncomeSources,
+    // Step4
+    this.maritalStatus,
+    this.housingType,
+    this.numberOfChildren,
+    // Step5
+    this.paymentType,
+    this.paymentProvider,
+    this.accountNumber,
+    this.accountHolder,
   });
 
-  Map<String, dynamic> toJson() => {
-    'requestedAmount': requestedAmount,
-    'requestedTerm': requestedTerm,
-    if (purpose != null) 'purpose': purpose,
-  };
+  Map<String, dynamic> toJson() {
+    return {
+      'requestedAmount': requestedAmount,
+      'requestedTerm': requestedTerm,
+      if (purpose != null) 'purpose': purpose,
+      // Step2
+      if (country != null) 'country': country,
+      if (department != null) 'department': department,
+      if (city != null) 'city': city,
+      if (district != null) 'district': district,
+      if (streetAddress != null) 'streetAddress': streetAddress,
+      if (postalCode != null) 'postalCode': postalCode,
+      // Step3
+      if (employmentStatus != null) 'employmentStatus': employmentStatus,
+      if (employerName != null) 'employerName': employerName,
+      if (monthlyIncome != null) 'monthlyIncome': monthlyIncome,
+      if (monthlyExpenses != null) 'monthlyExpenses': monthlyExpenses,
+      if (numberOfDependents != null) 'numberOfDependents': numberOfDependents,
+      if (otherIncomeSources != null) 'otherIncomeSources': otherIncomeSources,
+      // Step4
+      if (maritalStatus != null) 'maritalStatus': maritalStatus,
+      if (housingType != null) 'housingType': housingType,
+      if (numberOfChildren != null) 'numberOfChildren': numberOfChildren,
+      // Step5
+      if (paymentType != null) 'paymentType': paymentType,
+      if (paymentProvider != null) 'paymentProvider': paymentProvider,
+      if (accountNumber != null) 'accountNumber': accountNumber,
+      if (accountHolder != null) 'accountHolder': accountHolder,
+    };
+  }
 }
 
 class UpdateLoanApplicationDto {

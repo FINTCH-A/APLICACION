@@ -14,10 +14,6 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await dotenv.load(fileName: ".env");
-
-  print('ENV: ${dotenv.env['APP_ENV']}');
-  print('API URL: ${dotenv.env['API_URL']}');
-
   await SharedPrefs.init();
   await ApiClient().init();
 
@@ -31,8 +27,9 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        // Providers únicos (eliminados duplicados)
+        // Provider de autenticación - PRIMERO y ÚNICO
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        // Otros providers
         ChangeNotifierProvider(create: (_) => PrestamoProvider()),
         ChangeNotifierProvider(create: (_) => PagoProvider()),
         ChangeNotifierProvider(create: (_) => SolicitudProvider()),

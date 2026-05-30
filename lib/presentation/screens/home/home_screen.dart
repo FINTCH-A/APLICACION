@@ -3,20 +3,27 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import '../../../config/theme/app_colors.dart';
+
 import '../../../config/routes/route_names.dart';
+import '../../../config/theme/app_colors.dart';
+import '../../../config/theme/text_styles.dart';
+
 import '../../../data/models/prestamo_model.dart';
 import '../../../data/providers/auth_provider.dart';
 import '../../../data/providers/prestamo_provider.dart';
+
 import '../../navigation/bottom_nav_bar.dart';
-import 'widgets/home_header.dart';
-import 'widgets/stats_section.dart';
-import 'widgets/quick_actions.dart';
-import '../../widgets/common/loading_widget.dart';
-import '../../widgets/common/error_widget.dart';
-import '../../screens/prestamos/prestamos_screen.dart';
+
 import '../../screens/pagos/pagos_screen.dart';
 import '../../screens/perfil/perfil_screen.dart';
+import '../../screens/prestamos/prestamos_screen.dart';
+
+import '../../widgets/common/error_widget.dart';
+import '../../widgets/common/loading_widget.dart';
+
+import 'widgets/home_header.dart';
+import 'widgets/quick_actions.dart';
+import 'widgets/stats_section.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -46,6 +53,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadData() async {
     final prestamoProvider = context.read<PrestamoProvider>();
+
     await Future.wait([
       prestamoProvider.loadLoans(),
       prestamoProvider.loadLoanApplications(status: 'APPROVED'),
@@ -63,6 +71,17 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _goToPage(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -70,6 +89,7 @@ class _HomeScreenState extends State<HomeScreen> {
       extendBody: true,
       body: PageView(
         controller: _pageController,
+        physics: const BouncingScrollPhysics(),
         onPageChanged: (index) {
           setState(() {
             _currentIndex = index;
@@ -89,6 +109,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // ═════════════════════════════════════════════════════
+  // HOME CONTENT
+  // ═════════════════════════════════════════════════════
+
   Widget _buildHomeContent() {
     return Consumer2<AuthProvider, PrestamoProvider>(
       builder: (context, authProvider, prestamoProvider, child) {
@@ -103,21 +127,26 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         }
 
+        final user = authProvider.currentUser;
+
         final totalPrestamos = prestamoProvider.loans.fold<double>(
           0,
           (sum, loan) => sum + loan.approvedAmount,
         );
 
-        const totalPagado = 0.0;
-
         final prestamosActivos = prestamoProvider.loans
             .where((loan) => loan.status == LoanStatus.active)
+            .length;
+
+        final prestamosPendientes = prestamoProvider.loans
+            .where((loan) => loan.status == LoanStatus.pending)
             .length;
 
         return RefreshIndicator(
           onRefresh: _loadData,
           color: AppColors.primary,
           child: CustomScrollView(
+            physics: const BouncingScrollPhysics(),
             slivers: [
               SliverToBoxAdapter(
                 child: Column(
@@ -127,18 +156,23 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 16),
                     StatsSection(
                       totalPrestamos: totalPrestamos,
-                      totalPagado: totalPagado,
+                      totalPagado: 0,
                       prestamosActivos: prestamosActivos,
                     ),
-                    const SizedBox(height: 16),
-                    _buildPromoBanner(),
+                    const SizedBox(height: 18),
+                    _buildHeroBanner(),
                     const SizedBox(height: 24),
                     const QuickActions(),
                     const SizedBox(height: 28),
+                    _buildResumeCards(
+                      activos: prestamosActivos,
+                      pendientes: prestamosPendientes,
+                    ),
+                    const SizedBox(height: 26),
                     _buildLoanSection(prestamoProvider),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 24),
                     _buildSecuritySection(),
-                    const SizedBox(height: 110),
+                    const SizedBox(height: 120),
                   ],
                 ),
               ),
@@ -149,109 +183,131 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildPromoBanner() {
+  // ═════════════════════════════════════════════════════
+  // HERO BANNER
+  // ═════════════════════════════════════════════════════
+
+  Widget _buildHeroBanner() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
         gradient: const LinearGradient(
-          colors: [Color(0xFF0F2A2E), Color(0xFF1A3A3A)],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
+          colors: [Color(0xFF062B30), Color(0xFF0E4B4F), Color(0xFF0F766E)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.20),
+            blurRadius: 18,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
-      clipBehavior: Clip.hardEdge,
       child: Stack(
         children: [
-          // Círculos decorativos de fondo
           Positioned(
+            top: -40,
             right: -30,
-            top: -30,
             child: Container(
-              width: 120,
-              height: 120,
+              width: 160,
+              height: 160,
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
                 shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.05),
               ),
             ),
           ),
           Positioned(
-            right: 30,
-            bottom: -40,
+            bottom: -50,
+            left: -30,
             child: Container(
-              width: 90,
-              height: 90,
+              width: 140,
+              height: 140,
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.06),
                 shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.04),
               ),
             ),
           ),
-          // Contenido
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 20),
-            child: Row(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Obtén tu préstamo',
-                        style: TextStyle(fontSize: 13, color: Colors.white70),
+                Row(
+                  children: [
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(18),
                       ),
-                      const SizedBox(height: 6),
-                      RichText(
-                        text: TextSpan(
-                          children: [
-                            const TextSpan(
-                              text: 'de forma ',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                            TextSpan(
-                              text: '100% digital',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                          ],
+                      child: const Icon(
+                        Icons.flash_on_rounded,
+                        color: Colors.white,
+                        size: 28,
+                      ),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 7,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      child: Text(
+                        '100% Digital',
+                        style: TextStyles.labelMedium.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        'Rápido, seguro y al instante',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF94A3B8),
-                        ),
-                      ),
-                    ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 22),
+                Text(
+                  'Obtén tu préstamo\nrápido y seguro',
+                  style: TextStyles.headlineSmall.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    height: 1.2,
                   ),
                 ),
-                const SizedBox(width: 16),
-                // Ícono decorativo compacto
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.15),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AppColors.primary.withOpacity(0.3),
-                      width: 1.5,
-                    ),
+                const SizedBox(height: 10),
+                Text(
+                  'Solicita créditos desde tu celular y recibe respuesta en minutos.',
+                  style: TextStyles.bodyMedium.copyWith(
+                    color: Colors.white.withOpacity(0.82),
+                    height: 1.5,
                   ),
-                  child: const Icon(
-                    Icons.phone_android_rounded,
-                    color: AppColors.primary,
-                    size: 28,
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  height: 48,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      context.push(RouteNames.nuevaSolicitud);
+                    },
+                    icon: const Icon(Icons.arrow_forward_rounded),
+                    label: const Text('Solicitar préstamo'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: AppColors.primary,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      textStyle: TextStyles.labelLarge.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -261,6 +317,41 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
+  // ═════════════════════════════════════════════════════
+  // RESUME CARDS
+  // ═════════════════════════════════════════════════════
+
+  Widget _buildResumeCards({required int activos, required int pendientes}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          Expanded(
+            child: _MiniResumeCard(
+              title: 'Activos',
+              value: '$activos',
+              icon: Icons.account_balance_wallet_rounded,
+              color: AppColors.success,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _MiniResumeCard(
+              title: 'Pendientes',
+              value: '$pendientes',
+              icon: Icons.pending_actions_rounded,
+              color: AppColors.warning,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ═════════════════════════════════════════════════════
+  // LOAN SECTION
+  // ═════════════════════════════════════════════════════
 
   Widget _buildLoanSection(PrestamoProvider prestamoProvider) {
     final loans = prestamoProvider.loans.take(3).toList();
@@ -271,70 +362,30 @@ class _HomeScreenState extends State<HomeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Mis préstamos',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+              Expanded(
+                child: Text(
+                  'Mis préstamos',
+                  style: TextStyles.titleLarge.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
               TextButton(
-                onPressed: () {
-                  setState(() {
-                    _currentIndex = 1;
-                  });
-                  _pageController.animateToPage(
-                    1,
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                  );
-                },
-                child: const Text(
+                onPressed: () => _goToPage(1),
+                child: Text(
                   'Ver todos',
-                  style: TextStyle(
+                  style: TextStyles.labelLarge.copyWith(
                     color: AppColors.primary,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           if (loans.isEmpty)
-            Container(
-              padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.account_balance_wallet_outlined,
-                    size: 48,
-                    color: AppColors.textDisabled,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'No tienes préstamos activos',
-                    style: TextStyle(color: AppColors.textSecondary),
-                  ),
-                  const SizedBox(height: 12),
-                  ElevatedButton(
-                    onPressed: () {
-                      context.push(RouteNames.nuevaSolicitud);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                    ),
-                    child: const Text('Solicitar Préstamo'),
-                  ),
-                ],
-              ),
-            )
+            _buildEmptyLoans()
           else
             ...loans.map((loan) => _LoanCard(loan: loan)),
         ],
@@ -342,58 +393,123 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildEmptyLoans() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(28),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.border.withOpacity(0.5)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 82,
+            height: 82,
+            decoration: BoxDecoration(
+              color: AppColors.surfaceVariant.withOpacity(0.40),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.account_balance_wallet_outlined,
+              size: 40,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 18),
+          Text(
+            'No tienes préstamos activos',
+            style: TextStyles.titleMedium.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Solicita un préstamo y comienza a disfrutar de nuestros beneficios.',
+            textAlign: TextAlign.center,
+            style: TextStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton.icon(
+            onPressed: () {
+              context.push(RouteNames.nuevaSolicitud);
+            },
+            icon: const Icon(Icons.add_rounded),
+            label: const Text('Solicitar préstamo'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ═════════════════════════════════════════════════════
+  // SECURITY SECTION
+  // ═════════════════════════════════════════════════════
+
   Widget _buildSecuritySection() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.border.withOpacity(0.5)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 12,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            width: 58,
+            height: 58,
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(14),
+              color: AppColors.primary.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(18),
             ),
             child: const Icon(
-              Icons.shield_outlined,
+              Icons.shield_rounded,
               color: AppColors.primary,
-              size: 26,
+              size: 30,
             ),
           ),
-          const SizedBox(width: 14),
-          const Expanded(
+          const SizedBox(width: 16),
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Tu seguridad es nuestra prioridad',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+                  style: TextStyles.titleSmall.copyWith(
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 8),
                 Text(
-                  'Tus datos están protegidos con los más altos estándares de seguridad.',
-                  style: TextStyle(
-                    fontSize: 11,
+                  'Protegemos tus datos y transacciones con estándares avanzados de seguridad y cifrado.',
+                  style: TextStyles.bodyMedium.copyWith(
                     color: AppColors.textSecondary,
-                    height: 1.4,
+                    height: 1.5,
                   ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(width: 8),
-          const Icon(
-            Icons.chevron_right,
-            color: AppColors.textSecondary,
-            size: 20,
           ),
         ],
       ),
@@ -401,94 +517,72 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// ==================== LOAN CARD ====================
-class _LoanCard extends StatelessWidget {
-  final LoanModel loan;
+// ═════════════════════════════════════════════════════
+// MINI RESUME CARD
+// ═════════════════════════════════════════════════════
 
-  const _LoanCard({required this.loan});
+class _MiniResumeCard extends StatelessWidget {
+  final String title;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  const _MiniResumeCard({
+    required this.title,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final isActive = loan.status == LoanStatus.active;
-    final statusColor = _getStatusColor(loan.status);
-
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.border.withOpacity(0.5)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Ícono de préstamo con color según estado
           Container(
-            padding: const EdgeInsets.all(10),
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(12),
+              color: color.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(
-              Icons.account_balance_wallet_outlined,
-              size: 22,
-              color: statusColor,
+            child: Icon(icon, color: color, size: 22),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            value,
+            style: TextStyles.headlineSmall.copyWith(
+              fontWeight: FontWeight.w800,
             ),
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Préstamo #${loan.loanCode}',
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  'Monto: ${_formatCurrency(loan.approvedAmount)}',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: TextStyles.bodySmall.copyWith(
+              color: AppColors.textSecondary,
             ),
-          ),
-          const SizedBox(width: 8),
-          // Badge de estado
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              _getStatusText(loan.status),
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: statusColor,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          const Icon(
-            Icons.chevron_right,
-            color: AppColors.textSecondary,
-            size: 18,
           ),
         ],
       ),
     );
   }
+}
 
-  String _formatCurrency(double amount) {
-    return 'S/ ${amount.toStringAsFixed(2)}';
-  }
+// ═════════════════════════════════════════════════════
+// LOAN CARD (CORREGIDO)
+// ═════════════════════════════════════════════════════
+
+class _LoanCard extends StatelessWidget {
+  final LoanModel loan;
+
+  const _LoanCard({required this.loan});
 
   Color _getStatusColor(LoanStatus status) {
     switch (status) {
@@ -526,5 +620,103 @@ class _LoanCard extends StatelessWidget {
       case LoanStatus.cancelled:
         return 'Cancelado';
     }
+  }
+
+  String _formatCurrency(double amount) {
+    return 'S/ ${amount.toStringAsFixed(2)}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final statusColor = _getStatusColor(loan.status);
+
+    return GestureDetector(
+      onTap: () {
+        // CORREGIDO: Usar la ruta correcta con RouteNames
+        context.push(RouteNames.detallePrestamoPath(loan.id.toString()));
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 14),
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: statusColor.withOpacity(0.15)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 12,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 58,
+              height: 58,
+              decoration: BoxDecoration(
+                color: statusColor.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Icon(
+                Icons.account_balance_wallet_rounded,
+                color: statusColor,
+                size: 28,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Préstamo #${loan.loanCode}',
+                    style: TextStyles.titleSmall.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    _formatCurrency(loan.approvedAmount),
+                    style: TextStyles.bodyMedium.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.10),
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  child: Text(
+                    _getStatusText(loan.status),
+                    style: TextStyles.labelMedium.copyWith(
+                      color: statusColor,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 16,
+                  color: AppColors.textSecondary,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

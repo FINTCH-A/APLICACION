@@ -1,4 +1,5 @@
 import 'package:aplicacion_avante/data/models/prestamo_model.dart';
+import 'package:aplicacion_avante/data/models/solicitud_model.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +11,7 @@ import '../../widgets/common/empty_state.dart';
 import '../../widgets/common/error_widget.dart';
 import '../../widgets/common/loading_widget.dart';
 import '../../widgets/cards/prestamo_card.dart';
+import '../../widgets/cards/solicitud_card.dart';
 
 class PrestamosScreen extends StatefulWidget {
   const PrestamosScreen({super.key});
@@ -29,30 +31,48 @@ class _PrestamosScreenState extends State<PrestamosScreen> {
       label: 'Pagados',
       icon: Icons.check_circle_outline_rounded,
     ),
+    _FilterOption(
+      key: 'proceso',
+      label: 'En Proceso',
+      icon: Icons.hourglass_empty_rounded,
+    ),
   ];
 
   @override
   void initState() {
     super.initState();
-    _loadPrestamos();
+    _loadData();
   }
 
-  Future<void> _loadPrestamos() async {
-    await context.read<PrestamoProvider>().loadLoans();
+  Future<void> _loadData() async {
+    final provider = context.read<PrestamoProvider>();
+    await Future.wait([provider.loadLoans(), provider.loadLoanApplications()]);
   }
 
-  List<dynamic> _getFilteredLoans(PrestamoProvider provider) {
+  List<dynamic> _getFilteredItems(PrestamoProvider provider) {
+    final allLoans = provider.loans;
+    final allApplications = provider.loanApplications;
+
     switch (_selectedFilter) {
       case 'activos':
-        return provider.loans
-            .where((l) => l.status == LoanStatus.active)
-            .toList();
+        return allLoans.where((l) => l.status == LoanStatus.active).toList();
       case 'pagados':
-        return provider.loans
-            .where((l) => l.status == LoanStatus.paid)
+        return allLoans.where((l) => l.status == LoanStatus.paid).toList();
+      case 'proceso':
+        return allApplications
+            .where(
+              (a) =>
+                  a.status == LoanApplicationStatus.draft ||
+                  a.status == LoanApplicationStatus.submitted ||
+                  a.status == LoanApplicationStatus.underReview,
+            )
             .toList();
-      default:
-        return provider.loans;
+      default: // 'todos'
+        final List<dynamic> items = [];
+        items.addAll(allLoans);
+        items.addAll(allApplications);
+        items.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        return items;
     }
   }
 
@@ -68,39 +88,58 @@ class _PrestamosScreenState extends State<PrestamosScreen> {
           if (provider.loansError != null) {
             return ErrorWidgetCustom(
               message: provider.loansError!,
-              onRetry: _loadPrestamos,
+              onRetry: _loadData,
             );
           }
 
-          final filteredLoans = _getFilteredLoans(provider);
+          final filteredItems = _getFilteredItems(provider);
 
           return Column(
             children: [
               _buildFilterBar(),
-              if (filteredLoans.isEmpty)
+              if (filteredItems.isEmpty)
                 Expanded(
                   child: EmptyState(
-                    title: 'Sin préstamos',
-                    message: 'No hay préstamos en esta categoría',
+                    title: _selectedFilter == 'proceso'
+                        ? 'Sin solicitudes en proceso'
+                        : 'Sin préstamos',
+                    message: _selectedFilter == 'proceso'
+                        ? 'No tienes solicitudes pendientes'
+                        : 'No hay préstamos en esta categoría',
                     icon: Icons.account_balance_wallet_outlined,
                   ),
                 )
               else
                 Expanded(
                   child: RefreshIndicator(
-                    onRefresh: _loadPrestamos,
+                    onRefresh: _loadData,
                     color: AppColors.primary,
                     child: ListView.builder(
                       padding: const EdgeInsets.only(top: 8, bottom: 100),
-                      itemCount: filteredLoans.length,
+                      itemCount: filteredItems.length,
                       itemBuilder: (context, index) {
-                        final loan = filteredLoans[index];
-                        return PrestamoCard(
-                          prestamo: loan,
-                          onTap: () => context.push(
-                            RouteNames.detallePrestamoPath(loan.id.toString()),
-                          ),
-                        );
+                        final item = filteredItems[index];
+
+                        if (item is LoanModel) {
+                          return PrestamoCard(
+                            prestamo: item,
+                            onTap: () => context.push(
+                              RouteNames.detallePrestamoPath(
+                                item.id.toString(),
+                              ),
+                            ),
+                          );
+                        } else if (item is LoanApplicationModel) {
+                          return SolicitudCard(
+                            solicitud: item,
+                            onTap: () => context.push(
+                              RouteNames.detalleSolicitudPath(
+                                item.id.toString(),
+                              ),
+                            ),
+                          );
+                        }
+                        return const SizedBox.shrink();
                       },
                     ),
                   ),

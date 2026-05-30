@@ -16,6 +16,8 @@ class CustomTextField extends StatelessWidget {
   final int? maxLength;
   final bool enabled;
   final String? initialValue;
+  final TextInputAction? textInputAction;
+  final bool readOnly;
 
   const CustomTextField({
     super.key,
@@ -32,6 +34,8 @@ class CustomTextField extends StatelessWidget {
     this.maxLength,
     this.enabled = true,
     this.initialValue,
+    this.textInputAction,
+    this.readOnly = false,
   });
 
   @override
@@ -56,6 +60,8 @@ class CustomTextField extends StatelessWidget {
           maxLines: maxLines,
           maxLength: maxLength,
           enabled: enabled,
+          textInputAction: textInputAction,
+          readOnly: readOnly,
           style: TextStyles.bodyMedium,
           decoration: InputDecoration(
             hintText: hint,

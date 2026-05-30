@@ -2,11 +2,13 @@ import 'package:aplicacion_avante/config/routes/route_names.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/text_styles.dart';
 import '../../../data/models/prestamo_model.dart';
 import '../../../data/models/cuota_model.dart';
 import '../../../data/providers/prestamo_provider.dart';
+
 import '../../widgets/common/empty_state.dart';
 import '../../widgets/common/loading_widget.dart';
 
@@ -22,7 +24,7 @@ class _PagosScreenState extends State<PagosScreen> {
   String _selectedFilter = 'todos';
 
   final _filters = const [
-    _FilterOption(key: 'todos', label: 'Todos', icon: Icons.list_rounded),
+    _FilterOption(key: 'todos', label: 'Todos', icon: Icons.grid_view_rounded),
     _FilterOption(
       key: 'pendientes',
       label: 'Pendientes',
@@ -36,27 +38,27 @@ class _PagosScreenState extends State<PagosScreen> {
     _FilterOption(
       key: 'pagados',
       label: 'Pagados',
-      icon: Icons.check_circle_outline_rounded,
+      icon: Icons.check_circle_rounded,
     ),
   ];
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadLoans());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadLoans();
+    });
   }
 
   Future<void> _loadLoans() async {
     final provider = context.read<PrestamoProvider>();
     await provider.loadLoans();
-    // Seleccionar el primer préstamo activo automáticamente
-    if (mounted) {
-      final activos = provider.loans
-          .where((l) => l.status == LoanStatus.active)
-          .toList();
-      if (activos.isNotEmpty) {
-        _selectLoan(activos.first);
-      }
+    if (!mounted) return;
+    final activos = provider.loans
+        .where((l) => l.status == LoanStatus.active)
+        .toList();
+    if (activos.isNotEmpty) {
+      _selectLoan(activos.first);
     }
   }
 
@@ -71,37 +73,32 @@ class _PagosScreenState extends State<PagosScreen> {
   List<InstallmentModel> _getFilteredInstallments(List<InstallmentModel> all) {
     switch (_selectedFilter) {
       case 'pendientes':
-        return all
-            .where(
-              (c) =>
-                  c.status == InstallmentStatus.pending ||
-                  c.status == InstallmentStatus.partiallyPaid,
-            )
-            .toList();
+        return all.where((c) {
+          return c.status == InstallmentStatus.pending ||
+              c.status == InstallmentStatus.partiallyPaid;
+        }).toList();
       case 'vencidos':
-        return all
-            .where((c) => c.status == InstallmentStatus.overdue || c.isOverdue)
-            .toList();
+        return all.where((c) {
+          return c.status == InstallmentStatus.overdue || c.isOverdue;
+        }).toList();
       case 'pagados':
-        return all
-            .where(
-              (c) =>
-                  c.status == InstallmentStatus.paid ||
-                  c.status == InstallmentStatus.waived,
-            )
-            .toList();
+        return all.where((c) {
+          return c.status == InstallmentStatus.paid ||
+              c.status == InstallmentStatus.waived;
+        }).toList();
       default:
         return all;
     }
   }
 
-  // Formatter sin intl
   static String _fmt(double amount) {
     final parts = amount.toStringAsFixed(2).split('.');
     final digits = parts[0];
     final buf = StringBuffer();
     for (int i = 0; i < digits.length; i++) {
-      if (i > 0 && (digits.length - i) % 3 == 0) buf.write(',');
+      if (i > 0 && (digits.length - i) % 3 == 0) {
+        buf.write(',');
+      }
       buf.write(digits[i]);
     }
     return 'S/ $buf.${parts[1]}';
@@ -111,7 +108,15 @@ class _PagosScreenState extends State<PagosScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('Mis Pagos'), centerTitle: true),
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        centerTitle: true,
+        title: Text(
+          'Mis Pagos',
+          style: TextStyles.titleLarge.copyWith(fontWeight: FontWeight.bold),
+        ),
+      ),
       body: Consumer<PrestamoProvider>(
         builder: (context, provider, _) {
           if (provider.isLoadingLoans) {
@@ -126,7 +131,7 @@ class _PagosScreenState extends State<PagosScreen> {
             return EmptyState(
               title: 'Sin préstamos activos',
               message:
-                  'Cuando tengas un préstamo activo podrás ver sus cuotas aquí',
+                  'Cuando tengas un préstamo activo podrás ver tus cuotas aquí.',
               icon: Icons.account_balance_wallet_outlined,
             );
           }
@@ -136,20 +141,12 @@ class _PagosScreenState extends State<PagosScreen> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Resumen rápido ──────────────────────────
+              _buildHeader(),
               _buildSummary(provider.installments),
-
-              // ── Selector de préstamos ──────────────────
               _buildLoanSelector(prestamos),
-
-              const SizedBox(height: 4),
-
-              // ── Filtros de cuotas ──────────────────────
+              const SizedBox(height: 12),
               _buildFilterBar(),
-
-              const SizedBox(height: 4),
-
-              // ── Lista de cuotas ────────────────────────
+              const SizedBox(height: 8),
               Expanded(child: _buildCuotasList(provider, cuotas)),
             ],
           );
@@ -158,31 +155,55 @@ class _PagosScreenState extends State<PagosScreen> {
     );
   }
 
-  // ── Resumen rápido ────────────────────────────────────
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 6),
+          Text(
+            'Consulta el estado de tus cuotas y realiza pagos rápidamente.',
+            style: TextStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildSummary(List<InstallmentModel> all) {
-    final pendientes = all
-        .where(
-          (c) =>
-              c.status == InstallmentStatus.pending ||
-              c.status == InstallmentStatus.partiallyPaid,
-        )
-        .length;
-    final vencidas = all
-        .where((c) => c.status == InstallmentStatus.overdue || c.isOverdue)
-        .length;
-    final pagadas = all.where((c) => c.status == InstallmentStatus.paid).length;
+    final pendientes = all.where((c) {
+      return c.status == InstallmentStatus.pending ||
+          c.status == InstallmentStatus.partiallyPaid;
+    }).length;
+
+    final vencidas = all.where((c) {
+      return c.status == InstallmentStatus.overdue || c.isOverdue;
+    }).length;
+
+    final pagadas = all.where((c) {
+      return c.status == InstallmentStatus.paid;
+    }).length;
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1B6B65), Color(0xFF27BAAE)],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
+        gradient: LinearGradient(
+          colors: [AppColors.primary, AppColors.primaryDark],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -208,70 +229,50 @@ class _PagosScreenState extends State<PagosScreen> {
     );
   }
 
-  // ── Selector de préstamos ─────────────────────────────
-
   Widget _buildLoanSelector(List<LoanModel> prestamos) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-          child: Text(
-            'Selecciona un préstamo',
-            style: TextStyles.labelSmall.copyWith(
-              color: AppColors.textSecondary,
-              fontSize: 11,
-              letterSpacing: 0.5,
-            ),
-          ),
-        ),
-        SizedBox(
-          height: 42,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: prestamos.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 8),
-            itemBuilder: (_, i) {
-              final loan = prestamos[i];
-              final isSelected = _selectedLoan?.id == loan.id;
-              return _LoanChip(
-                loan: loan,
-                isSelected: isSelected,
-                onTap: () => _selectLoan(loan),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ── Filtros ───────────────────────────────────────────
-
-  Widget _buildFilterBar() {
     return SizedBox(
-      height: 40,
+      height: 48,
       child: ListView.separated(
-        scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: _filters.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        scrollDirection: Axis.horizontal,
+        itemCount: prestamos.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
         itemBuilder: (_, i) {
-          final f = _filters[i];
-          final isSelected = _selectedFilter == f.key;
-          return _FilterTab(
-            label: f.label,
-            icon: f.icon,
-            isSelected: isSelected,
-            onTap: () => setState(() => _selectedFilter = f.key),
+          final loan = prestamos[i];
+          return _LoanChip(
+            loan: loan,
+            isSelected: _selectedLoan?.id == loan.id,
+            onTap: () => _selectLoan(loan),
           );
         },
       ),
     );
   }
 
-  // ── Lista de cuotas ───────────────────────────────────
+  Widget _buildFilterBar() {
+    return SizedBox(
+      height: 42,
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        scrollDirection: Axis.horizontal,
+        itemCount: _filters.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        itemBuilder: (_, i) {
+          final filter = _filters[i];
+          return _FilterTab(
+            label: filter.label,
+            icon: filter.icon,
+            isSelected: _selectedFilter == filter.key,
+            onTap: () {
+              setState(() {
+                _selectedFilter = filter.key;
+              });
+            },
+          );
+        },
+      ),
+    );
+  }
 
   Widget _buildCuotasList(
     PrestamoProvider provider,
@@ -284,54 +285,65 @@ class _PagosScreenState extends State<PagosScreen> {
     if (_selectedLoan == null) {
       return EmptyState(
         title: 'Selecciona un préstamo',
-        message: 'Elige un préstamo arriba para ver sus cuotas',
-        icon: Icons.touch_app_outlined,
+        message: 'Elige un préstamo para visualizar sus cuotas.',
+        icon: Icons.touch_app_rounded,
       );
     }
 
     if (cuotas.isEmpty) {
       return EmptyState(
         title: 'Sin cuotas',
-        message: 'No hay cuotas en esta categoría',
+        message: 'No existen cuotas para este filtro.',
         icon: Icons.receipt_long_outlined,
       );
     }
 
     return RefreshIndicator(
-      onRefresh: () async {
-        if (_selectedLoan != null) {
-          await provider.loadInstallments(_selectedLoan!.id);
-        }
-      },
       color: AppColors.primary,
+      onRefresh: () async {
+        await provider.loadInstallments(_selectedLoan!.id);
+      },
       child: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
         itemCount: cuotas.length,
-        itemBuilder: (_, i) => _CuotaCard(
-          cuota: cuotas[i],
-          fmt: _fmt,
-          onPagar: () {
-            context.push(
-              RouteNames.nuevaPagoPath(
-                loanId: cuotas[i].loanId,
-                installmentId: cuotas[i].id,
-              ),
-            );
-          },
-          onVerDetalle: () {
-            context.push(
-              '/prestamos/${cuotas[i].loanId}/cuota/${cuotas[i].id}',
-            );
-          },
-        ),
+        itemBuilder: (_, i) {
+          final cuota = cuotas[i];
+          return _CuotaCard(
+            cuota: cuota,
+            fmt: _fmt,
+            onPagar: () {
+              context.push(
+                RouteNames.nuevaPagoPath(
+                  loanId: cuota.loanId,
+                  installmentId: cuota.id,
+                ),
+              );
+            },
+            onVerDetalle: () {
+              context.push('/pagos/${cuota.loanId}/cuota/${cuota.id}');
+            },
+          );
+        },
       ),
     );
   }
 }
 
-// ══════════════════════════════════════════════════════
-// LOAN CHIP
-// ══════════════════════════════════════════════════════
+class _FilterOption {
+  final String key;
+  final String label;
+  final IconData icon;
+  const _FilterOption({
+    required this.key,
+    required this.label,
+    required this.icon,
+  });
+}
+
+// =========================================================
+// LOAN CHIP (CORREGIDO)
+// =========================================================
 
 class _LoanChip extends StatelessWidget {
   final LoanModel loan;
@@ -349,31 +361,28 @@ class _LoanChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        duration: const Duration(milliseconds: 250),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.primary : AppColors.surface,
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected ? AppColors.primary : AppColors.border,
-            width: 1,
           ),
         ),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               Icons.account_balance_wallet_outlined,
-              size: 13,
+              size: 16,
               color: isSelected ? Colors.white : AppColors.textSecondary,
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: 8),
             Text(
               '#${loan.loanCode}',
               style: TextStyles.labelMedium.copyWith(
-                color: isSelected ? Colors.white : AppColors.textSecondary,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                fontSize: 12,
+                color: isSelected ? Colors.white : AppColors.textPrimary,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
@@ -383,20 +392,9 @@ class _LoanChip extends StatelessWidget {
   }
 }
 
-// ══════════════════════════════════════════════════════
-// FILTER TAB
-// ══════════════════════════════════════════════════════
-
-class _FilterOption {
-  final String key;
-  final String label;
-  final IconData icon;
-  const _FilterOption({
-    required this.key,
-    required this.label,
-    required this.icon,
-  });
-}
+// =========================================================
+// FILTER TAB (CORREGIDO)
+// =========================================================
 
 class _FilterTab extends StatelessWidget {
   final String label;
@@ -416,31 +414,28 @@ class _FilterTab extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        duration: const Duration(milliseconds: 250),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.primary : AppColors.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected ? AppColors.primary : AppColors.border,
-            width: 1,
           ),
         ),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               icon,
-              size: 13,
+              size: 15,
               color: isSelected ? Colors.white : AppColors.textSecondary,
             ),
-            const SizedBox(width: 5),
+            const SizedBox(width: 6),
             Text(
               label,
               style: TextStyles.labelMedium.copyWith(
-                color: isSelected ? Colors.white : AppColors.textSecondary,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                fontSize: 12,
+                color: isSelected ? Colors.white : AppColors.textPrimary,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
@@ -450,9 +445,9 @@ class _FilterTab extends StatelessWidget {
   }
 }
 
-// ══════════════════════════════════════════════════════
+// =========================================================
 // SUMMARY CHIP
-// ══════════════════════════════════════════════════════
+// =========================================================
 
 class _SummaryChip extends StatelessWidget {
   final String label;
@@ -472,20 +467,17 @@ class _SummaryChip extends StatelessWidget {
         children: [
           Text(
             '$count',
-            style: TextStyle(
+            style: TextStyles.displaySmall.copyWith(
               color: color,
-              fontSize: 22,
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 4),
           Text(
             label,
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.75),
-              fontSize: 10,
+            style: TextStyles.bodySmall.copyWith(
+              color: Colors.white.withOpacity(0.7),
             ),
-            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -498,16 +490,16 @@ class _VSep extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 1,
-      height: 36,
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      color: Colors.white.withOpacity(0.25),
+      height: 42,
+      margin: const EdgeInsets.symmetric(horizontal: 10),
+      color: Colors.white.withOpacity(0.15),
     );
   }
 }
 
-// ══════════════════════════════════════════════════════
-// CUOTA CARD
-// ══════════════════════════════════════════════════════
+// =========================================================
+// CUOTA CARD (CORREGIDO - SIN COLORES BLANCOS FIJOS)
+// =========================================================
 
 class _CuotaCard extends StatelessWidget {
   final InstallmentModel cuota;
@@ -522,20 +514,24 @@ class _CuotaCard extends StatelessWidget {
     required this.onVerDetalle,
   });
 
-  bool get _isPagable =>
-      cuota.status == InstallmentStatus.pending ||
-      cuota.status == InstallmentStatus.overdue ||
-      cuota.status == InstallmentStatus.partiallyPaid ||
-      cuota.isOverdue;
+  bool get _isPagable {
+    return cuota.status == InstallmentStatus.pending ||
+        cuota.status == InstallmentStatus.overdue ||
+        cuota.status == InstallmentStatus.partiallyPaid ||
+        cuota.isOverdue;
+  }
 
   Color get _statusColor {
-    if (cuota.status == InstallmentStatus.paid) return AppColors.success;
-    if (cuota.status == InstallmentStatus.overdue || cuota.isOverdue)
+    if (cuota.status == InstallmentStatus.paid) {
+      return AppColors.success;
+    }
+    if (cuota.status == InstallmentStatus.overdue || cuota.isOverdue) {
       return AppColors.error;
-    if (cuota.status == InstallmentStatus.partiallyPaid)
+    }
+    if (cuota.status == InstallmentStatus.partiallyPaid) {
       return AppColors.warning;
-    if (cuota.status == InstallmentStatus.waived) return AppColors.info;
-    return AppColors.warning; // pending
+    }
+    return AppColors.warning;
   }
 
   String get _statusLabel => cuota.statusText;
@@ -553,198 +549,239 @@ class _CuotaCard extends StatelessWidget {
         cuota.status == InstallmentStatus.paid ||
         cuota.status == InstallmentStatus.waived;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: isPaid ? AppColors.border : color.withOpacity(0.3),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.12),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
+    return GestureDetector(
+      onTap: onVerDetalle,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        margin: const EdgeInsets.only(bottom: 14),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: isPaid ? AppColors.border : color.withOpacity(0.15),
           ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // ── Fila superior: nro cuota + badge ──────
-            Row(
-              children: [
-                // Número de cuota con ícono
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Center(
-                    child: Text(
-                      '${cuota.installmentNumber}',
-                      style: TextStyle(
-                        color: color,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Cuota #${cuota.installmentNumber}',
-                        style: TextStyles.bodyMedium.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.event_outlined,
-                            size: 12,
-                            color: cuota.isOverdue
-                                ? AppColors.error
-                                : AppColors.textSecondary,
-                          ),
-                          const SizedBox(width: 3),
-                          Text(
-                            'Vence: ${_fmtDate(cuota.dueDate)}',
-                            style: TextStyles.labelSmall.copyWith(
-                              color: cuota.isOverdue
-                                  ? AppColors.error
-                                  : AppColors.textSecondary,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                // Badge de estado
-                _StatusBadge(label: _statusLabel, color: color),
-              ],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
             ),
-
-            const SizedBox(height: 14),
-            Divider(color: AppColors.border, height: 1),
-            const SizedBox(height: 14),
-
-            // ── Fila de datos + botón ─────────────────
-            Row(
-              children: [
-                // Monto
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Monto total',
-                        style: TextStyles.labelSmall.copyWith(
-                          color: AppColors.textSecondary,
-                          fontSize: 10,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        fmt(cuota.totalAmount),
-                        style: TextStyles.titleSmall.copyWith(
-                          color: AppColors.primary,
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            children: [
+              // Cabecera con número de cuota y badge
+              Row(
+                children: [
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${cuota.installmentNumber}',
+                        style: TextStyles.titleMedium.copyWith(
+                          color: color,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                ),
-                // Pendiente (si aplica)
-                if (cuota.pendingAmount > 0 && !isPaid) ...[
+                  const SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Pendiente',
-                          style: TextStyles.labelSmall.copyWith(
-                            color: AppColors.textSecondary,
-                            fontSize: 10,
+                          'Cuota #${cuota.installmentNumber}',
+                          style: TextStyles.titleSmall.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
                           ),
                         ),
-                        const SizedBox(height: 3),
-                        Text(
-                          fmt(cuota.pendingAmount),
-                          style: TextStyles.titleSmall.copyWith(
-                            color: color,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.calendar_today,
+                              size: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                            const SizedBox(width: 5),
+                            Flexible(
+                              child: Text(
+                                'Vence ${_fmtDate(cuota.dueDate)}',
+                                style: TextStyles.bodySmall.copyWith(
+                                  color: cuota.isOverdue
+                                      ? AppColors.error
+                                      : AppColors.textSecondary,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
                   ),
+                  _StatusBadge(label: _statusLabel, color: color),
                 ],
-                // Botón acción
-                _ActionButton(
-                  isPagable: _isPagable,
-                  isPaid: isPaid,
-                  color: color,
-                  onPagar: onPagar,
-                  onVerDetalle: onVerDetalle,
+              ),
+              const SizedBox(height: 18),
+              Divider(color: AppColors.border),
+              const SizedBox(height: 18),
+
+              // Montos
+              Row(
+                children: [
+                  Expanded(
+                    child: _AmountItem(
+                      title: 'Monto',
+                      value: fmt(cuota.totalAmount),
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  if (cuota.pendingAmount > 0 && !isPaid)
+                    Expanded(
+                      child: _AmountItem(
+                        title: 'Pendiente',
+                        value: fmt(cuota.pendingAmount),
+                        color: color,
+                      ),
+                    ),
+                ],
+              ),
+
+              // Días vencidos
+              if (cuota.daysOverdue > 0) ...[
+                const SizedBox(height: 16),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.warning_amber_rounded,
+                        size: 16,
+                        color: AppColors.error,
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          'Vencida hace ${cuota.daysOverdue} día${cuota.daysOverdue != 1 ? 's' : ''}',
+                          style: TextStyles.labelMedium.copyWith(
+                            color: AppColors.error,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
-            ),
+              const SizedBox(height: 18),
 
-            // ── Días vencidos (si aplica) ─────────────
-            if (cuota.daysOverdue > 0) ...[
-              const SizedBox(height: 10),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.error.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.warning_amber_rounded,
-                      size: 13,
-                      color: AppColors.error,
+              // Botones
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: onVerDetalle,
+                      icon: const Icon(Icons.visibility_outlined, size: 18),
+                      label: const Text('Detalle'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.primary,
+                        side: BorderSide(color: AppColors.primary),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
                     ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Vencida hace ${cuota.daysOverdue} día${cuota.daysOverdue != 1 ? 's' : ''}',
-                      style: TextStyles.labelSmall.copyWith(
-                        color: AppColors.error,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
+                  ),
+                  if (_isPagable) ...[
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: onPagar,
+                        icon: const Icon(Icons.payment, size: 18),
+                        label: const Text('Pagar'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: color,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
                       ),
                     ),
                   ],
-                ),
+                ],
               ),
             ],
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-// ── Badge de estado ───────────────────────────────────
+// =========================================================
+// AMOUNT ITEM
+// =========================================================
+
+class _AmountItem extends StatelessWidget {
+  final String title;
+  final String value;
+  final Color color;
+
+  const _AmountItem({
+    required this.title,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          value,
+          style: TextStyles.titleMedium.copyWith(
+            color: color,
+            fontWeight: FontWeight.bold,
+          ),
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    );
+  }
+}
+
+// =========================================================
+// STATUS BADGE
+// =========================================================
 
 class _StatusBadge extends StatelessWidget {
   final String label;
@@ -755,80 +792,32 @@ class _StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.3), width: 1),
+        border: Border.all(color: color.withOpacity(0.25)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 6,
-            height: 6,
+            width: 7,
+            height: 7,
             decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: TextStyles.labelSmall.copyWith(
-              color: color,
-              fontWeight: FontWeight.w600,
-              fontSize: 11,
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              label,
+              style: TextStyles.labelSmall.copyWith(
+                color: color,
+                fontWeight: FontWeight.w700,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// ── Botón de acción ───────────────────────────────────
-
-class _ActionButton extends StatelessWidget {
-  final bool isPagable;
-  final bool isPaid;
-  final Color color;
-  final VoidCallback onPagar;
-  final VoidCallback onVerDetalle;
-
-  const _ActionButton({
-    required this.isPagable,
-    required this.isPaid,
-    required this.color,
-    required this.onPagar,
-    required this.onVerDetalle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (isPaid) {
-      return TextButton.icon(
-        onPressed: onVerDetalle,
-        icon: const Icon(Icons.visibility_outlined, size: 14),
-        label: const Text('Ver'),
-        style: TextButton.styleFrom(
-          foregroundColor: AppColors.info,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-        ),
-      );
-    }
-
-    return ElevatedButton.icon(
-      onPressed: onPagar,
-      icon: const Icon(Icons.payment_rounded, size: 14),
-      label: const Text('Pagar'),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: color,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        minimumSize: Size.zero,
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-        elevation: 0,
       ),
     );
   }

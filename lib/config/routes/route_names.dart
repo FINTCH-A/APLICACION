@@ -21,6 +21,8 @@ class RouteNames {
   static const String pagos = '/pagos';
   static const String registrarPago = '/pagos/registrar/:id';
   static const String nuevaPago = '/pagos/nueva';
+  static const String detalleCuota =
+      '/pagos/:loanId/cuota/:cuotaId'; // NUEVA RUTA
 
   // Perfil
   static const String perfil = '/perfil';
@@ -31,11 +33,16 @@ class RouteNames {
   static String detallePrestamoPath(String id) => '/prestamos/detalle/$id';
   static String registrarPagoPath(String id) => '/pagos/registrar/$id';
 
-  // Nuevo helper para pagar desde cuota
+  // Helper para pagar desde cuota
   static String nuevaPagoPath({
     required int loanId,
     required int installmentId,
   }) {
     return '/pagos/nueva?loanId=$loanId&installmentId=$installmentId';
+  }
+
+  // Helper para detalle de cuota (NUEVO)
+  static String detalleCuotaPath({required int loanId, required int cuotaId}) {
+    return '/pagos/$loanId/cuota/$cuotaId';
   }
 }

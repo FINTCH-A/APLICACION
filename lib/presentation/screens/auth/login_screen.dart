@@ -60,47 +60,48 @@ class _LoginScreenState extends State<LoginScreen> {
         decoration: BoxDecoration(gradient: AppColors.backgroundGradient),
         child: SafeArea(
           child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: 20),
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 20),
 
-                  // Logo grande y centrado (como antes)
-                  _buildLogo(),
+                // Logo circular (nuevo diseño)
+                _buildLogo(),
 
-                  const SizedBox(height: 16),
+                const SizedBox(height: 24),
 
-                  // Título
-                  _buildTitle(),
+                // Título (nuevo diseño)
+                _buildTitle(),
 
-                  const SizedBox(height: 48),
+                const SizedBox(height: 48),
 
-                  // Formulario
-                  _buildForm(),
+                // Formulario
+                _buildForm(),
 
-                  const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-                  // Botón de Login
-                  _buildLoginButton(),
+                // Botón de Login
+                _buildLoginButton(),
 
-                  const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-                  // Olvidé mi contraseña
-                  _buildForgotPassword(),
+                // Olvidé mi contraseña
+                _buildForgotPassword(),
 
-                  const SizedBox(height: 40),
+                const SizedBox(height: 40),
 
-                  // Divider
-                  _buildDivider(),
+                // Divider
+                _buildDivider(),
 
-                  const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-                  // Registro
-                  _buildRegisterSection(),
-                ],
-              ),
+                // Registro
+                _buildRegisterSection(),
+
+                const SizedBox(height: 20),
+              ],
             ),
           ),
         ),
@@ -108,24 +109,39 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  // =========================================================
+  // LOGO CIRCULAR (nuevo diseño)
+  // =========================================================
+
   Widget _buildLogo() {
     return Center(
-      child: Container(
-        width: 280,
-        height: 100,
-        decoration: BoxDecoration(
-          borderRadius: AppBorders.cardLarge,
-          boxShadow: AppShadows.glow,
-        ),
-        child: Image.asset(
-          'assets/images/logo-dark.png',
+      child: Hero(
+        tag: 'app-logo',
+        child: Container(
           width: 100,
           height: 100,
-          fit: BoxFit.contain,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            shape: BoxShape.circle,
+            boxShadow: AppShadows.medium,
+            border: Border.all(
+              color: AppColors.primary.withOpacity(0.15),
+              width: 1.5,
+            ),
+          ),
+          child: Image.asset(
+            'assets/images/logo-dark.png',
+            fit: BoxFit.contain,
+          ),
         ),
       ),
     );
   }
+
+  // =========================================================
+  // TÍTULO
+  // =========================================================
 
   Widget _buildTitle() {
     return Column(
@@ -136,21 +152,30 @@ class _LoginScreenState extends State<LoginScreen> {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 8),
-        Text(
-          'Ingresa tus credenciales para continuar',
-          style: TextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
-          textAlign: TextAlign.center,
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            'Ingresa tus credenciales para continuar',
+            style: TextStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+            ),
+            textAlign: TextAlign.center,
+            softWrap: true,
+          ),
         ),
       ],
     );
   }
+
+  // =========================================================
+  // FORMULARIO
+  // =========================================================
 
   Widget _buildForm() {
     return Form(
       key: _formKey,
       child: Column(
         children: [
-          // Email
           CustomTextField(
             label: 'Correo Electrónico',
             hint: 'tu@email.com',
@@ -168,8 +193,6 @@ class _LoginScreenState extends State<LoginScreen> {
             },
           ),
           const SizedBox(height: 16),
-
-          // Password
           CustomTextField(
             label: 'Contraseña',
             hint: '••••••••',
@@ -202,6 +225,10 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  // =========================================================
+  // BOTÓN DE LOGIN
+  // =========================================================
+
   Widget _buildLoginButton() {
     return Consumer<AuthProvider>(
       builder: (context, authProvider, _) {
@@ -213,6 +240,10 @@ class _LoginScreenState extends State<LoginScreen> {
       },
     );
   }
+
+  // =========================================================
+  // OLVIDÉ CONTRASEÑA
+  // =========================================================
 
   Widget _buildForgotPassword() {
     return Align(
@@ -232,6 +263,10 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  // =========================================================
+  // DIVIDER
+  // =========================================================
+
   Widget _buildDivider() {
     return Row(
       children: [
@@ -247,6 +282,10 @@ class _LoginScreenState extends State<LoginScreen> {
       ],
     );
   }
+
+  // =========================================================
+  // SECCIÓN DE REGISTRO
+  // =========================================================
 
   Widget _buildRegisterSection() {
     return Row(

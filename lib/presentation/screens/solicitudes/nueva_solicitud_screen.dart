@@ -1,4 +1,4 @@
-// ignore_for_file: unused_import
+// ignore_for_file: unused_import, unused_local_variable
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -8,9 +8,14 @@ import '../../../config/theme/text_styles.dart';
 import '../../../config/routes/route_names.dart';
 import '../../../data/models/solicitud_model.dart';
 import '../../../data/providers/prestamo_provider.dart';
-import '../../widgets/common/custom_button.dart';
-import '../../widgets/common/custom_text_field.dart';
 import '../../widgets/common/loading_widget.dart';
+import 'widgets/step1_monto_plazo.dart';
+import 'widgets/step2_direccion.dart';
+import 'widgets/step3_laboral.dart';
+import 'widgets/step4_personal.dart';
+import 'widgets/step5_pago.dart';
+import 'widgets/step6_confirmar.dart';
+import 'widgets/step_success.dart';
 
 class NuevaSolicitudScreen extends StatefulWidget {
   const NuevaSolicitudScreen({super.key});
@@ -20,183 +25,263 @@ class NuevaSolicitudScreen extends StatefulWidget {
 }
 
 class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _amountController = TextEditingController();
-  final _termController = TextEditingController();
-  final _purposeController = TextEditingController();
-
+  int _currentStep = 1;
   bool _isSubmitting = false;
+  bool _success = false;
+  int? _applicationId;
 
-  @override
-  void dispose() {
-    _amountController.dispose();
-    _termController.dispose();
-    _purposeController.dispose();
-    super.dispose();
+  // Datos del wizard
+  final Map<String, dynamic> _formData = {
+    'step1': null,
+    'step2': null,
+    'step3': null,
+    'step4': null,
+    'step5': null,
+  };
+
+  final List<String> _stepTitles = [
+    'Monto y plazo',
+    'Dirección',
+    'Situación laboral',
+    'Información personal',
+    'Datos de pago',
+    'Confirmar',
+  ];
+
+  void _saveStep1(Map<String, dynamic> data) {
+    setState(() {
+      _formData['step1'] = data;
+      _currentStep = 2;
+    });
   }
 
-  Future<void> _submitSolicitud() async {
-    if (!_formKey.currentState!.validate()) return;
+  void _saveStep2(Map<String, dynamic> data) {
+    setState(() {
+      _formData['step2'] = data;
+      _currentStep = 3;
+    });
+  }
 
+  void _saveStep3(Map<String, dynamic> data) {
+    setState(() {
+      _formData['step3'] = data;
+      _currentStep = 4;
+    });
+  }
+
+  void _saveStep4(Map<String, dynamic> data) {
+    setState(() {
+      _formData['step4'] = data;
+      _currentStep = 5;
+    });
+  }
+
+  void _saveStep5(Map<String, dynamic> data) {
+    setState(() {
+      _formData['step5'] = data;
+      _currentStep = 6;
+    });
+  }
+
+  void _goToPreviousStep() {
+    if (_currentStep > 1) {
+      setState(() {
+        _currentStep--;
+      });
+    }
+  }
+
+  Future<void> _submitApplication() async {
     setState(() {
       _isSubmitting = true;
     });
 
-    final dto = CreateLoanApplicationDto(
-      requestedAmount: double.parse(_amountController.text),
-      requestedTerm: int.parse(_termController.text),
-      purpose: _purposeController.text.isNotEmpty
-          ? _purposeController.text
-          : null,
+    final step1 = _formData['step1'] as Map<String, dynamic>;
+
+    // 1. Crear DTO solo con los campos que el backend espera
+    final createDto = CreateLoanApplicationDto(
+      requestedAmount: step1['requestedAmount'].toDouble(),
+      requestedTerm: step1['requestedTerm'] as int,
+      purpose: step1['purpose'] as String?,
     );
 
     final prestamoProvider = context.read<PrestamoProvider>();
-    final success = await prestamoProvider.createLoanApplication(dto);
+
+    // 2. Crear la solicitud (estado DRAFT)
+    final createSuccess = await prestamoProvider.createLoanApplication(
+      createDto,
+    );
+
+    if (!createSuccess && mounted) {
+      setState(() {
+        _isSubmitting = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            prestamoProvider.applicationsError ?? 'Error al crear la solicitud',
+          ),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    // 3. Obtener el ID de la solicitud creada
+    final applicationId = prestamoProvider.currentApplication?.id;
+
+    if (applicationId == null) {
+      setState(() {
+        _isSubmitting = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error: No se pudo obtener el ID de la solicitud'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    // 4. Enviar la solicitud (cambiar de DRAFT a SUBMITTED)
+    final submitSuccess = await prestamoProvider.submitLoanApplication(
+      applicationId,
+    );
 
     setState(() {
       _isSubmitting = false;
     });
 
-    if (success && mounted) {
-      // Mostrar mensaje de éxito
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Solicitud creada exitosamente'),
-          backgroundColor: AppColors.success,
-        ),
-      );
-      context.pop();
-    } else if (mounted && prestamoProvider.applicationsError != null) {
+    if (submitSuccess && mounted) {
+      setState(() {
+        _success = true;
+        _applicationId = applicationId;
+      });
+    } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(prestamoProvider.applicationsError!),
+          content: Text(
+            prestamoProvider.applicationsError ??
+                'Error al enviar la solicitud',
+          ),
           backgroundColor: AppColors.error,
         ),
       );
     }
   }
 
+  double get _progress => ((_currentStep - 1) / 6) * 100;
+
   @override
   Widget build(BuildContext context) {
+    if (_success) {
+      return StepSuccess(applicationId: _applicationId);
+    }
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Nueva Solicitud'), centerTitle: true),
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: const Text('Nueva Solicitud'),
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+      ),
       body: _isSubmitting
-          ? const LoadingWidget(message: 'Creando solicitud...')
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Monto solicitado
-                    CustomTextField(
-                      label: 'Monto Solicitado (S/)',
-                      hint: '1000',
-                      controller: _amountController,
-                      keyboardType: TextInputType.number,
-                      prefixIcon: Icons.attach_money,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Ingrese el monto solicitado';
-                        }
-                        final amount = double.tryParse(value);
-                        if (amount == null || amount < 100) {
-                          return 'El monto mínimo es S/ 100';
-                        }
-                        if (amount > 50000) {
-                          return 'El monto máximo es S/ 50,000';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Plazo solicitado
-                    CustomTextField(
-                      label: 'Plazo (meses)',
-                      hint: '12',
-                      controller: _termController,
-                      keyboardType: TextInputType.number,
-                      prefixIcon: Icons.calendar_month,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Ingrese el plazo';
-                        }
-                        final term = int.tryParse(value);
-                        if (term == null || term < 3) {
-                          return 'El plazo mínimo es 3 meses';
-                        }
-                        if (term > 60) {
-                          return 'El plazo máximo es 60 meses';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Propósito
-                    CustomTextField(
-                      label: 'Propósito (opcional)',
-                      hint: 'Describe el motivo del préstamo',
-                      controller: _purposeController,
-                      maxLines: 3,
-                      prefixIcon: Icons.description_outlined,
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Información adicional
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceVariant,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+          ? const LoadingWidget(message: 'Enviando solicitud...')
+          : Column(
+              children: [
+                // Progress bar
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.info_outline,
-                                size: 20,
-                                color: AppColors.info,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Información importante',
-                                style: TextStyles.labelMedium.copyWith(
-                                  color: AppColors.info,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
                           Text(
-                            '• Monto mínimo: S/ 100\n'
-                            '• Monto máximo: S/ 50,000\n'
-                            '• Plazo mínimo: 3 meses\n'
-                            '• Plazo máximo: 60 meses\n'
-                            '• La solicitud será revisada por un analista\n'
-                            '• Recibirás notificación por correo y en la app',
-                            style: TextStyles.bodySmall.copyWith(
+                            'Paso $_currentStep de 6',
+                            style: TextStyles.labelSmall.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          Text(
+                            _stepTitles[_currentStep - 1],
+                            style: TextStyles.labelSmall.copyWith(
                               color: AppColors.textSecondary,
                             ),
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Botón de enviar
-                    CustomButton(
-                      text: 'Enviar Solicitud',
-                      onPressed: _submitSolicitud,
-                    ),
-                  ],
+                      const SizedBox(height: 8),
+                      LinearProgressIndicator(
+                        value: _progress / 100,
+                        backgroundColor: AppColors.surfaceVariant,
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+                Expanded(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: _buildCurrentStep(),
+                  ),
+                ),
+              ],
             ),
     );
+  }
+
+  Widget _buildCurrentStep() {
+    switch (_currentStep) {
+      case 1:
+        return Step1MontoPlazo(
+          key: const ValueKey('step1'),
+          initialData: _formData['step1'],
+          onNext: _saveStep1,
+        );
+      case 2:
+        return Step2Direccion(
+          key: const ValueKey('step2'),
+          initialData: _formData['step2'],
+          onNext: _saveStep2,
+          onPrev: _goToPreviousStep,
+        );
+      case 3:
+        return Step3Laboral(
+          key: const ValueKey('step3'),
+          initialData: _formData['step3'],
+          onNext: _saveStep3,
+          onPrev: _goToPreviousStep,
+        );
+      case 4:
+        return Step4Personal(
+          key: const ValueKey('step4'),
+          initialData: _formData['step4'],
+          onNext: _saveStep4,
+          onPrev: _goToPreviousStep,
+        );
+      case 5:
+        return Step5Pago(
+          key: const ValueKey('step5'),
+          initialData: _formData['step5'],
+          onNext: _saveStep5,
+          onPrev: _goToPreviousStep,
+        );
+      case 6:
+        return Step6Confirmar(
+          key: const ValueKey('step6'),
+          formData: _formData,
+          onSubmit: _submitApplication,
+          onPrev: _goToPreviousStep,
+          isLoading: _isSubmitting,
+        );
+      default:
+        return const SizedBox.shrink();
+    }
   }
 }

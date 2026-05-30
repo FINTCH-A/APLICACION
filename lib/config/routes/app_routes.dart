@@ -13,6 +13,7 @@ import '../../presentation/screens/prestamos/prestamos_screen.dart';
 import '../../presentation/screens/prestamos/detalle_prestamo_screen.dart';
 import '../../presentation/screens/pagos/pagos_screen.dart';
 import '../../presentation/screens/pagos/registrar_pago_screen.dart';
+import '../../presentation/screens/pagos/detalle_cuota_screen.dart'; // ← VERIFICAR ESTA LÍNEA
 import '../../presentation/screens/perfil/perfil_screen.dart';
 import '../../presentation/screens/perfil/editar_perfil_screen.dart';
 import 'route_names.dart';
@@ -86,7 +87,6 @@ class AppRoutes {
         path: RouteNames.pagos,
         builder: (context, state) => const PagosScreen(),
       ),
-      // Ruta para pagar desde cuota (con query parameters)
       GoRoute(
         name: 'nuevaPago',
         path: RouteNames.nuevaPago,
@@ -99,7 +99,17 @@ class AppRoutes {
           );
         },
       ),
-      // Ruta legacy para compatibilidad (sin parámetros)
+      // Ruta para detalle de cuota
+      GoRoute(
+        name: 'detalleCuota',
+        path: RouteNames.detalleCuota,
+        builder: (context, state) {
+          final loanId = int.parse(state.pathParameters['loanId']!);
+          final cuotaId = int.parse(state.pathParameters['cuotaId']!);
+          return DetalleCuotaScreen(loanId: loanId, cuotaId: cuotaId);
+        },
+      ),
+      // Ruta legacy
       GoRoute(
         name: 'registrarPago',
         path: RouteNames.registrarPago,
