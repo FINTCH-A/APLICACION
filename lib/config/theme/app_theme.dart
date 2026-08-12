@@ -11,7 +11,7 @@ class AppTheme {
       brightness: Brightness.dark,
       useMaterial3: true,
 
-      // Colores principales
+      // Colores principales - Actualizados
       primaryColor: AppColors.primary,
       primaryColorDark: AppColors.primaryDark,
       primaryColorLight: AppColors.primaryLight,
@@ -24,7 +24,7 @@ class AppTheme {
       highlightColor: AppColors.primary.withOpacity(0.1),
       splashColor: AppColors.primary.withOpacity(0.2),
 
-      // ColorScheme completo
+      // ColorScheme completo - Actualizado
       colorScheme: const ColorScheme.dark(
         primary: AppColors.primary,
         secondary: AppColors.secondary,
@@ -77,13 +77,16 @@ class AppTheme {
       // Card
       cardTheme: CardThemeData(
         elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: AppBorders.card),
+        shape: RoundedRectangleBorder(
+          borderRadius: AppBorders.card,
+          side: BorderSide(color: AppColors.border, width: 0.5),
+        ),
         color: AppColors.surface,
         margin: EdgeInsets.zero,
         clipBehavior: Clip.antiAlias,
       ),
 
-      // Botones
+      // Botones - Actualizados
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
@@ -117,7 +120,7 @@ class AppTheme {
         ),
       ),
 
-      // Inputs
+      // Inputs - Actualizados
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.surfaceAlt,
@@ -156,16 +159,19 @@ class AppTheme {
         suffixIconColor: AppColors.textSecondary,
       ),
 
-      // Diálogos
+      // Diálogos - Actualizados
       dialogTheme: DialogThemeData(
         backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(borderRadius: AppBorders.modal),
+        shape: RoundedRectangleBorder(
+          borderRadius: AppBorders.modal,
+          side: BorderSide(color: AppColors.border, width: 0.5),
+        ),
         titleTextStyle: TextStyles.titleMedium,
         contentTextStyle: TextStyles.bodyMedium,
         elevation: 0,
       ),
 
-      // Bottom Sheet
+      // Bottom Sheet - Actualizado
       bottomSheetTheme: const BottomSheetThemeData(
         backgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(
@@ -176,7 +182,7 @@ class AppTheme {
         dragHandleColor: AppColors.textSecondary,
       ),
 
-      // TabBar
+      // TabBar - Actualizado
       tabBarTheme: const TabBarThemeData(
         labelColor: AppColors.primary,
         unselectedLabelColor: AppColors.textSecondary,
@@ -185,15 +191,14 @@ class AppTheme {
         dividerColor: Colors.transparent,
       ),
 
-      // Progress Indicators
+      // Progress Indicators - Actualizado
       progressIndicatorTheme: const ProgressIndicatorThemeData(
         color: AppColors.primary,
         linearTrackColor: AppColors.surfaceVariant,
         circularTrackColor: AppColors.surfaceVariant,
       ),
 
-      // Navigation Bar — completamente transparente para no interferir
-      // con el BottomNavBar flotante personalizado
+      // Navigation Bar - Actualizado
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
@@ -203,7 +208,7 @@ class AppTheme {
         height: 0,
       ),
 
-      // Switch
+      // Switch - Actualizado
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.all(Colors.white),
         trackColor: WidgetStateProperty.resolveWith((states) {
@@ -214,7 +219,7 @@ class AppTheme {
         }),
       ),
 
-      // Checkbox
+      // Checkbox - Actualizado
       checkboxTheme: CheckboxThemeData(
         fillColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
@@ -226,7 +231,7 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: AppBorders.small),
       ),
 
-      // Radio
+      // Radio - Actualizado
       radioTheme: RadioThemeData(
         fillColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
@@ -236,7 +241,7 @@ class AppTheme {
         }),
       ),
 
-      // Slider
+      // Slider - Actualizado
       sliderTheme: SliderThemeData(
         activeTrackColor: AppColors.primary,
         inactiveTrackColor: AppColors.surfaceVariant,
@@ -247,31 +252,35 @@ class AppTheme {
         overlayShape: const RoundSliderOverlayShape(overlayRadius: 20),
       ),
 
-      // Scrollbar
+      // Scrollbar - Actualizado
       scrollbarTheme: ScrollbarThemeData(
         thickness: WidgetStateProperty.all(4),
         radius: const Radius.circular(4),
         thumbColor: WidgetStateProperty.all(AppColors.primary.withOpacity(0.5)),
       ),
 
-      // Tooltip
+      // Tooltip - Actualizado
       tooltipTheme: TooltipThemeData(
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: AppBorders.medium,
           boxShadow: AppShadows.soft,
+          border: Border.all(color: AppColors.border, width: 0.5),
         ),
         textStyle: TextStyles.labelSmall,
       ),
 
-      // PopupMenu
+      // PopupMenu - Actualizado
       popupMenuTheme: PopupMenuThemeData(
         color: AppColors.surface,
-        shape: RoundedRectangleBorder(borderRadius: AppBorders.medium),
+        shape: RoundedRectangleBorder(
+          borderRadius: AppBorders.medium,
+          side: BorderSide(color: AppColors.border, width: 0.5),
+        ),
         elevation: 8,
       ),
 
-      // TimePicker
+      // TimePicker - Actualizado
       timePickerTheme: TimePickerThemeData(
         backgroundColor: AppColors.surface,
         hourMinuteTextColor: AppColors.textPrimary,
@@ -281,7 +290,7 @@ class AppTheme {
         hourMinuteColor: AppColors.surfaceAlt,
       ),
 
-      // DatePicker
+      // DatePicker - Actualizado
       datePickerTheme: DatePickerThemeData(
         backgroundColor: AppColors.surface,
         headerBackgroundColor: AppColors.primary,

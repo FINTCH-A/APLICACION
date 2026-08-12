@@ -55,7 +55,7 @@ class HomeHeader extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'Bienvenido a Avante Fintech',
+                'Bienvenido a Financiera Fintech',
                 style: TextStyles.bodyMedium.copyWith(
                   color: Colors.white.withOpacity(0.65),
                   fontSize: 14,
